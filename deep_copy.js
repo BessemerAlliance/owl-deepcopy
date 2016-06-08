@@ -1,6 +1,6 @@
 /* This file is part of OWL JavaScript Utilities.
 
-OWL JavaScript Utilities is free software: you can redistribute it and/or 
+OWL JavaScript Utilities is free software: you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public License
 as published by the Free Software Foundation, either version 3 of
 the License, or (at your option) any later version.
@@ -10,8 +10,8 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
 
-You should have received a copy of the GNU Lesser General Public 
-License along with OWL JavaScript Utilities.  If not, see 
+You should have received a copy of the GNU Lesser General Public
+License along with OWL JavaScript Utilities.  If not, see
 <http://www.gnu.org/licenses/>.
 */
 
@@ -39,36 +39,36 @@ function clone(target) {
 }
 
 
-// Shallow Copy 
+// Shallow Copy
 function copy(target) {
   if (typeof target !== 'object' ) {
     return target;  // non-object have value sematics, so target is already a copy.
   } else {
     var value = target.valueOf();
-    if (target != value) { 
+    if (target != value) {
       // the object is a standard object wrapper for a native type, say String.
       // we can make a copy by instantiating a new object around the value.
       return new target.constructor(value);
     } else {
-      // ok, we have a normal object. If possible, we'll clone the original's prototype 
+      // ok, we have a normal object. If possible, we'll clone the original's prototype
       // (not the original) to get an empty object with the same prototype chain as
-      // the original.  If just copy the instance properties.  Otherwise, we have to 
+      // the original.  If just copy the instance properties.  Otherwise, we have to
       // copy the whole thing, property-by-property.
-      if ( target instanceof target.constructor && target.constructor !== Object ) { 
+      if ( target instanceof target.constructor && target.constructor !== Object ) {
 	var c = clone(target.constructor.prototype);
-	
+
 	// give the copy all the instance properties of target.  It has the same
 	// prototype as target, so inherited properties are already there.
-	for ( var property in target) { 
+	for ( var property in target) {
 	  if (target.hasOwnProperty(property)) {
 	    c[property] = target[property];
-	  } 
+	  }
 	}
       } else {
 	var c = {};
 	for ( var property in target ) c[property] = target[property];
       }
-      
+
       return c;
     }
   }
@@ -82,15 +82,15 @@ function DeepCopier(config) {
 }
 DeepCopier.prototype = {
   constructor: DeepCopier,
-  
+
   // determines if this DeepCopier can handle the given object.
   canCopy: function(source) { return false; },
-  
+
   // starts the deep copying process by creating the copy object.  You
   // can initialize any properties you want, but you can't call recursively
   // into the DeeopCopyAlgorithm.
   create: function(source) { },
-  
+
   // Completes the deep copy of the source object by populating any properties
   // that need to be recursively deep copied.  You can do this by using the
   // provided deepCopyAlgorithm instance's deepCopy() method.  This will handle
@@ -111,15 +111,15 @@ function DeepCopyAlgorithm() {
 }
 DeepCopyAlgorithm.prototype = {
   constructor: DeepCopyAlgorithm,
-  
+
   maxDepth: 256,
-  
+
   // add an object to the cache.  No attempt is made to filter duplicates;
   // we always check getCachedResult() before calling it.
   cacheResult: function(source, result) {
     this.copiedObjects.push([source, result]);
   },
-  
+
   // Returns the cached copy of a given object, or undefined if it's an
   // object we haven't seen before.
   getCachedResult: function(source) {
@@ -132,24 +132,24 @@ DeepCopyAlgorithm.prototype = {
     }
     return undefined;
   },
-  
+
   // deepCopy handles the simple cases itself: non-objects and object's we've seen before.
   // For complex cases, it first identifies an appropriate DeepCopier, then calls
   // applyDeepCopier() to delegate the details of copying the object to that DeepCopier.
   deepCopy: function(source) {
     // null is a special case: it's the only value of type 'object' without properties.
     if ( source === null ) return null;
-    
+
     // All non-objects use value semantics and don't need explict copying.
     if ( typeof source !== 'object' ) return source;
-    
+
     var cachedResult = this.getCachedResult(source);
-    
+
     // we've already seen this object during this deep copy operation
     // so can immediately return the result.  This preserves the cyclic
     // reference structure and protects us from infinite recursion.
     if ( cachedResult ) return cachedResult;
-    
+
     // objects may need special handling depending on their class.  There is
     // a class of handlers call "DeepCopiers"  that know how to copy certain
     // objects.  There is also a final, generic deep copier that can handle any object.
@@ -162,7 +162,7 @@ DeepCopyAlgorithm.prototype = {
     // the generic copier can handle anything, so we should never reach this line.
     throw new Error("no DeepCopier is able to copy " + source);
   },
-  
+
   // once we've identified which DeepCopier to use, we need to call it in a very
   // particular order: create, cache, populate.  This is the key to detecting cycles.
   // We also keep track of recursion depth when calling the potentially recursive
@@ -171,12 +171,12 @@ DeepCopyAlgorithm.prototype = {
   applyDeepCopier: function(deepCopier, source) {
     // Start by creating a stub object that represents the copy.
     var result = deepCopier.create(source);
-    
+
     // we now know the deep copy of source should always be result, so if we encounter
     // source again during this deep copy we can immediately use result instead of
-    // descending into it recursively.  
+    // descending into it recursively.
     this.cacheResult(source, result);
-    
+
     // only DeepCopier::populate() can recursively deep copy.  So, to keep track
     // of recursion depth, we increment this shared counter before calling it,
     // and decrement it afterwards.
@@ -184,12 +184,12 @@ DeepCopyAlgorithm.prototype = {
     if ( this.depth > this.maxDepth ) {
       throw new Error("Exceeded max recursion depth in deep copy.");
     }
-    
+
     // It's now safe to let the deepCopier recursively deep copy its properties.
     deepCopier.populate(this.recursiveDeepCopy, source, result);
-    
+
     this.depth--;
-    
+
     return result;
   }
 };
@@ -209,7 +209,7 @@ deepCopy.DeepCopier = DeepCopier;
 // publicly expose the list of deepCopiers.
 deepCopy.deepCopiers = deepCopiers;
 
-// make deepCopy() extensible by allowing others to 
+// make deepCopy() extensible by allowing others to
 // register their own custom DeepCopiers.
 deepCopy.register = function(deepCopier) {
   if ( !(deepCopier instanceof DeepCopier) ) {
@@ -222,20 +222,22 @@ deepCopy.register = function(deepCopier) {
 // the ultimate fallback DeepCopier, which tries to handle the generic case.  This
 // should work for base Objects and many user-defined classes.
 deepCopy.register({
-  canCopy: function(source) { return true; },
-  
+  canCopy: function(source) {
+    return true;
+  },
+
   create: function(source) {
-    if ( source instanceof source.constructor ) {
+    if ( source.constructor && source instanceof source.constructor ) {
       return clone(source.constructor.prototype);
     } else {
       return {};
     }
   },
-  
+
   populate: function(deepCopy, source, result) {
     for ( var key in source ) {
-      if ( source.hasOwnProperty(key) ) {
-	result[key] = deepCopy(source[key]);
+      if ( source.hasOwnProperty && source.hasOwnProperty(key) ) {
+	      result[key] = deepCopy(source[key]);
       }
     }
     return result;
@@ -247,11 +249,11 @@ deepCopy.register({
   canCopy: function(source) {
     return ( source instanceof Array );
   },
-  
+
   create: function(source) {
     return new source.constructor();
   },
-  
+
   populate: function(deepCopy, source, result) {
     for ( var i=0; i<source.length; i++) {
       result.push( deepCopy(source[i]) );
@@ -265,9 +267,36 @@ deepCopy.register({
   canCopy: function(source) {
     return ( source instanceof Date );
   },
-  
+
   create: function(source) {
     return new Date(source);
+  }
+});
+
+// EventEmitter copier
+// EventEmitters have a property which is an object, but doesn't
+// have an object prototype, so instanceof doesn't work on them
+var EventEmitter = require('events').EventEmitter;
+deepCopy.register({
+  canCopy: function(source) {
+    return source instanceof EventEmitter;
+  },
+
+  create: function(source) {
+    if ( source.hasOwnProperty && source instanceof source.constructor ) {
+      return clone(source.constructor.prototype);
+    } else {
+      return {};
+    }
+  },
+
+  populate: function(deepCopy, source, result) {
+    for ( var key in source ) {
+      if ( !source.hasOwnProperty || source.hasOwnProperty(key) ) {
+        result[key] = deepCopy(source[key]);
+      }
+    }
+    return result;
   }
 });
 
@@ -297,20 +326,20 @@ function isNode(source) {
 // Node copier
 deepCopy.register({
   canCopy: function(source) { return isNode(source); },
-  
+
   create: function(source) {
     // there can only be one (document).
     if ( source === document ) return document;
-    
+
     // start with a shallow copy.  We'll handle the deep copy of
     // its children ourselves.
     return source.cloneNode(false);
   },
-  
+
   populate: function(deepCopy, source, result) {
     // we're not copying the global document, so don't have to populate it either.
     if ( source === document ) return document;
-    
+
     // if this Node has children, deep copy them one-by-one.
     if ( source.childNodes && source.childNodes.length ) {
       for ( var i=0; i<source.childNodes.length; i++ ) {
@@ -325,4 +354,3 @@ exports.DeepCopyAlgorithm = DeepCopyAlgorithm;
 exports.copy = copy;
 exports.clone = clone;
 exports.deepCopy = deepCopy;
-
